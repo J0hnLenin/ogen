@@ -15,18 +15,19 @@ type WebhookInfo struct {
 }
 
 type Operation struct {
-	Name           string
-	Summary        string
-	Description    string
-	Deprecated     bool
-	WebhookInfo    *WebhookInfo
-	PathParts      []*PathPart
-	Params         []*Parameter
-	Request        *Request
-	Responses      *Responses
-	Security       SecurityRequirements
-	Spec           *openapi.Operation
-	OperationGroup string
+	Name                  string
+	Summary               string
+	Description           string
+	Deprecated            bool
+	WebhookInfo           *WebhookInfo
+	PathParts             []*PathPart
+	Params                []*Parameter
+	Request               *Request
+	Responses             *Responses
+	Security              SecurityRequirements
+	Spec                  *openapi.Operation
+	OperationGroup        string
+	AdditionalDescription string
 }
 
 type OperationGroup struct {
@@ -79,16 +80,33 @@ func (op Operation) PrettyOperationID() string {
 }
 
 func (op Operation) GoDoc() []string {
+	var docStrings []string
+
 	doc := op.Description
 	if doc == "" {
 		doc = op.Summary
 	}
 
-	var notice string
-	if op.Deprecated {
-		notice = "Deprecated: schema marks this operation as deprecated."
+	if doc != "" {
+		docStrings = append(docStrings, prettyDoc(doc, "")...)
 	}
-	return prettyDoc(doc, notice)
+
+	if op.AdditionalDescription != "" {
+		if len(docStrings) > 0 {
+			docStrings = append(docStrings, "")
+		}
+		docStrings = append(docStrings, prettyDoc(op.AdditionalDescription, "")...)
+	}
+
+	if op.Deprecated {
+		deprecation := "Deprecated: schema marks this operation as deprecated."
+		if len(docStrings) > 0 {
+			docStrings = append(docStrings, "")
+		}
+		docStrings = append(docStrings, deprecation)
+	}
+
+	return docStrings
 }
 
 // HasRawResponse returns true if the operation has any response content types
