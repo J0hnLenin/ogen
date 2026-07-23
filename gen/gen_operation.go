@@ -26,11 +26,12 @@ func (g *Generator) generateOperation(ctx *genctx, webhookName string, spec *ope
 	}
 
 	op := &ir.Operation{
-		Name:        opName,
-		Summary:     spec.Summary,
-		Description: spec.Description,
-		Deprecated:  spec.Deprecated,
-		Spec:        spec,
+		Name:                  opName,
+		Summary:               spec.Summary,
+		Description:           spec.Description,
+		AdditionalDescription: spec.XAdditionalDescription,
+		Deprecated:            spec.Deprecated,
+		Spec:                  spec,
 	}
 
 	if spec.XOgenOperationGroup != "" {

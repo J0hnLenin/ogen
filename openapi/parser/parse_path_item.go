@@ -25,7 +25,8 @@ type (
 )
 
 const (
-	xOgenOperationGroup = "x-ogen-operation-group"
+	xOgenOperationGroup    = "x-ogen-operation-group"
+	xAdditionalDescription = "x-description"
 )
 
 func (up unparsedPath) String() string {
@@ -139,19 +140,25 @@ func (p *parser) parseOp(
 	}()
 
 	op := &openapi.Operation{
-		Tags:                spec.Tags,
-		OperationID:         spec.OperationID,
-		Summary:             spec.Summary,
-		Description:         spec.Description,
-		Deprecated:          spec.Deprecated,
-		HTTPMethod:          httpMethod,
-		Pointer:             locator.Pointer(p.file(ctx)),
-		XOgenOperationGroup: operationGroup,
+		Tags:                   spec.Tags,
+		OperationID:            spec.OperationID,
+		Summary:                spec.Summary,
+		Description:            spec.Description,
+		Deprecated:             spec.Deprecated,
+		HTTPMethod:             httpMethod,
+		Pointer:                locator.Pointer(p.file(ctx)),
+		XOgenOperationGroup:    operationGroup,
+		XAdditionalDescription: "",
 	}
 
 	err = p.parseOperationGroup(spec.Common, &op.XOgenOperationGroup)
 	if err != nil {
 		return nil, errors.Wrap(err, xOgenOperationGroup)
+	}
+
+	err = p.parseAdditionalDescription(spec.Common, &op.XAdditionalDescription)
+	if err != nil {
+		return nil, errors.Wrap(err, xAdditionalDescription)
 	}
 
 	opParams, err := p.parseParams(spec.Parameters, locator.Field("parameters"), ctx)
@@ -256,6 +263,16 @@ func (p *parser) parseOperationGroup(common jsonschema.OpenAPICommon, operationG
 
 		if !token.IsIdentifier(*operationGroup) {
 			return errors.Errorf("%q is not a valid identifier", *operationGroup)
+		}
+	}
+
+	return nil
+}
+
+func (p *parser) parseAdditionalDescription(common jsonschema.OpenAPICommon, additionalDescription *string) error {
+	if ex, ok := common.Extensions[xAdditionalDescription]; ok {
+		if err := ex.Decode(additionalDescription); err != nil {
+			return errors.Wrap(err, "unmarshal value")
 		}
 	}
 

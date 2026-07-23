@@ -321,3 +321,72 @@ func TestDuplicatePathsSameMethod(t *testing.T) {
 	a.Error(err)
 	a.Contains(err.Error(), "duplicate path")
 }
+
+// TestParseAdditionalDescription_Present tests that x-desxription parses successfully
+func TestParseAdditionalDescription_Present(t *testing.T) {
+	addDescription := "yet another custom comment"
+	opID := "listUsers"
+	root := &ogen.Spec{
+		OpenAPI: "3.0.3",
+		Paths: map[string]*ogen.PathItem{
+			"/users": {
+				Get: &ogen.Operation{
+					OperationID: opID,
+					Common:      extensionValue(xAdditionalDescription, addDescription),
+					Responses: map[string]*ogen.Response{
+						"200": {},
+					},
+				},
+			},
+		},
+	}
+
+	a := require.New(t)
+
+	var raw yaml.Node
+	a.NoError(raw.Encode(root))
+	root.Raw = &raw
+
+	spec, err := Parse(root, Settings{
+		RootURL: testRootURL,
+	})
+	a.NoError(err)
+	a.Len(spec.Operations, 1)
+
+	op := spec.Operations[0]
+	a.Equal(opID, op.OperationID)
+	a.Equal(addDescription, op.XAdditionalDescription)
+}
+
+// TestParseAdditionalDescription_Absent tests that operation,
+// without x-description parses successfully (optional field)
+func TestParseAdditionalDescription_Absent(t *testing.T) {
+	root := &ogen.Spec{
+		OpenAPI: "3.0.3",
+		Paths: map[string]*ogen.PathItem{
+			"/users": {
+				Get: &ogen.Operation{
+					OperationID: "listUsers",
+					Responses: map[string]*ogen.Response{
+						"200": {},
+					},
+				},
+			},
+		},
+	}
+
+	a := require.New(t)
+
+	var raw yaml.Node
+	a.NoError(raw.Encode(root))
+	root.Raw = &raw
+
+	spec, err := Parse(root, Settings{
+		RootURL: testRootURL,
+	})
+	a.NoError(err)
+	a.Len(spec.Operations, 1)
+
+	op := spec.Operations[0]
+	a.Empty(op.XAdditionalDescription)
+}
